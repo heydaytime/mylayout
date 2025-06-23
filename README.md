@@ -15,6 +15,7 @@ brew install qmk/qmk/qmk
 ### 2. Clone the Correct Firmware Branch
 ```bash
 git clone -b hall_effect_playground https://github.com/Keychron/qmk_firmware.git ~/qmk_firmware
+git submodule update --init --recursive
 qmk setup -H ~/qmk_firmware
 ```
 This sets `~/qmk_firmware` as your QMK home directory.
