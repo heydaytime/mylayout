@@ -5,6 +5,18 @@ Built on Keychron’s `hall_effect_playground` branch of QMK firmware.
 
 ---
 
+## My Experimental Phase (Trying out Colemak Layout)
+I am currently experimenting with the **Colemak-DHm** layout.
+I know that Vim is designed with QWERTY in mind, so I have a toggle key to switch between QWERTY and Colemak-DHm.
+I do that whenever I need to use Vim normal mode. It's a little jank, but it works for now.
+No way am I going to learn Vim on Colemak-DHm again.
+
+![Current Layout](Keyboard-Layout.png)
+
+Pressing Fn toggles QWERTY mode.
+I can also control more RGB effects in the Fn layer. 
+> The Fn layer is not shown in the image
+
 ## 🛠️ Setup Instructions (macOS)
 
 ### 1. Install QMK CLI
