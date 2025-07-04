@@ -56,6 +56,20 @@ const custom_shift_key_t custom_shift_keys[] = {
 };
 uint8_t NUM_CUSTOM_SHIFT_KEYS = sizeof(custom_shift_keys) / sizeof(custom_shift_key_t);
 
+// Variables to track layer state and RGB settings
+static bool is_mac_fn_layer = false;
+static uint8_t saved_rgb_mode = 0;
+static uint8_t saved_rgb_hue = 0;
+static uint8_t saved_rgb_sat = 0;
+static uint8_t saved_rgb_val = 0;
+static bool saved_rgb_state = false;
+static bool rgb_settings_saved = false;
+
+// Preview functionality variables
+static bool is_previewing = false;
+static uint16_t preview_timer = 0;
+static const uint16_t PREVIEW_DURATION = 1000; // 1 second in milliseconds
+
 // clang-format off
 // https://docs.qmk.fm/keycodes
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -65,15 +79,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      KC_TAB,   KC_Q,     KC_W,     KC_F,     KC_P,     KC_B,     KC_J,     KC_L,     KC_U,     KC_Y,     KC_COLON,  KC_AT, KC_HASH,  KC_BSLS,            KC_PGDN,
      KC_BACKSPACE,  KC_A,     KC_R,     KC_S,     KC_T,     KC_G,     KC_M,     KC_N,     KC_E,     KC_I,     KC_O,     KC_QUOT,            KC_ENT,      KC_HOME,
      KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_D,     KC_V,     KC_K,     KC_H,     KC_COMM,  KC_DOT,   KC_SLSH,           CTL_G,  KC_UP,    KC_END,
-     KC_LCTL,  TG(MAC_FN), KC_LCMMD,                               KC_SPC,                                 KC_ESC,KC_ROPTN,KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RGHT),
+     KC_LCTL,  TG(MAC_FN), KC_LCMMD,                               KC_SPC,                                 KC_ESC,KC_RCTL,KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
 
 [MAC_FN] = LAYOUT_ansi_84(
      _______,  KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   _______,  _______,  RGB_TOG,
-     _______,  _______,  _______,  _______,   _______,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,          RGB_SAI,
-     _______,  KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     _______,  _______,  _______,            RGB_SAD,
-     _______,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     MACRO_J,  KC_K,     KC_L,     KC_SCLN,  _______,            _______,            RGB_SPI,
-     _______,            MACRO_Z,  KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     _______,  _______,  _______,            _______,  RGB_VAI,  RGB_SPD,
-     _______,  _______,  _______,                                _______,                                _______,  _______,  _______,  RGB_RMOD, RGB_VAD,  RGB_MOD),
+     _______,  _______,  _______,  _______,   _______,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,          RGB_VAI,
+     _______,  KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     _______,  _______,  _______,            RGB_VAD,
+     _______,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     MACRO_J,  KC_K,     KC_L,     KC_SCLN,  _______,            _______,            RGB_RMOD,
+     _______,            MACRO_Z,  KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     _______,  _______,  _______,            _______,  _______,  RGB_MOD,
+     _______,  _______,  _______,                                _______,                                _______,  _______,  _______,  _______, _______,  _______),
 
 
 
@@ -106,8 +120,137 @@ static bool macro_z_pressed = false;
 static uint16_t macro_j_timer = 0;
 static uint16_t macro_z_timer = 0;
 
+// Save current RGB settings
+void save_rgb_settings(void) {
+    if (!rgb_settings_saved) {
+        saved_rgb_mode = rgb_matrix_get_mode();
+        saved_rgb_hue = rgb_matrix_get_hue();
+        saved_rgb_sat = rgb_matrix_get_sat();
+        saved_rgb_val = rgb_matrix_get_val();
+        saved_rgb_state = rgb_matrix_is_enabled();
+        rgb_settings_saved = true;
+    }
+}
+
+// Restore saved RGB settings
+void restore_rgb_settings(void) {
+    if (rgb_settings_saved) {
+        if (saved_rgb_state) {
+            rgb_matrix_enable();
+            rgb_matrix_mode(saved_rgb_mode);
+            rgb_matrix_sethsv(saved_rgb_hue, saved_rgb_sat, saved_rgb_val);
+        } else {
+            rgb_matrix_disable();
+        }
+        rgb_settings_saved = false;
+    }
+}
+
+// Set all keys to bright red
+void set_all_keys_red(void) {
+    rgb_matrix_enable();
+    rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
+    rgb_matrix_sethsv(0, 255, 255);  // Bright red (H=0, S=255, V=255)
+}
+
+// Apply current saved RGB settings (for preview)
+void apply_saved_rgb_settings(void) {
+    if (rgb_settings_saved) {
+        if (saved_rgb_state) {
+            rgb_matrix_enable();
+            rgb_matrix_mode(saved_rgb_mode);
+            rgb_matrix_sethsv(saved_rgb_hue, saved_rgb_sat, saved_rgb_val);
+        } else {
+            rgb_matrix_disable();
+        }
+    }
+}
+
+// Start preview mode
+void start_preview(void) {
+    if (is_mac_fn_layer) {
+        is_previewing = true;
+        preview_timer = timer_read();
+        apply_saved_rgb_settings();
+    }
+}
+
+// Layer state callback
+layer_state_t layer_state_set_user(layer_state_t state) {
+    bool new_is_mac_fn_layer = layer_state_cmp(state, MAC_FN);
+
+    if (new_is_mac_fn_layer != is_mac_fn_layer) {
+        is_mac_fn_layer = new_is_mac_fn_layer;
+
+        if (is_mac_fn_layer) {
+            // Entering MAC_FN layer - save current settings and set to red
+            save_rgb_settings();
+            set_all_keys_red();
+        } else {
+            // Exiting MAC_FN layer - restore previous settings
+            restore_rgb_settings();
+        }
+    }
+
+    return state;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!process_custom_shift_keys(keycode, record)) { return false; }
+
+    // If we're in MAC_FN layer, intercept RGB commands to only affect base layer
+    if (is_mac_fn_layer) {
+        switch (keycode) {
+            case RGB_TOG:
+            case RGB_MOD:
+            case RGB_RMOD:
+            case RGB_VAI:
+            case RGB_VAD:
+            case RGB_HUI:
+            case RGB_HUD:
+            case RGB_SAI:
+            case RGB_SAD:
+            case RGB_SPI:
+            case RGB_SPD:
+                if (record->event.pressed) {
+                    // Process the RGB command for the saved settings
+                    if (rgb_settings_saved) {
+                        switch (keycode) {
+                            case RGB_TOG:
+                                saved_rgb_state = !saved_rgb_state;
+                                break;
+                            case RGB_MOD:
+                                saved_rgb_mode = (saved_rgb_mode + 1) % RGB_MATRIX_EFFECT_MAX;
+                                break;
+                            case RGB_RMOD:
+                                saved_rgb_mode = (saved_rgb_mode - 1 + RGB_MATRIX_EFFECT_MAX) % RGB_MATRIX_EFFECT_MAX;
+                                break;
+                            case RGB_VAI:
+                                saved_rgb_val = (saved_rgb_val + 8 > 255) ? 255 : saved_rgb_val + 8;
+                                break;
+                            case RGB_VAD:
+                                saved_rgb_val = (saved_rgb_val - 8 < 0) ? 0 : saved_rgb_val - 8;
+                                break;
+                            case RGB_HUI:
+                                saved_rgb_hue = (saved_rgb_hue + 8) % 256;
+                                break;
+                            case RGB_HUD:
+                                saved_rgb_hue = (saved_rgb_hue - 8 + 256) % 256;
+                                break;
+                            case RGB_SAI:
+                                saved_rgb_sat = (saved_rgb_sat + 8 > 255) ? 255 : saved_rgb_sat + 8;
+                                break;
+                            case RGB_SAD:
+                                saved_rgb_sat = (saved_rgb_sat - 8 < 0) ? 0 : saved_rgb_sat - 8;
+                                break;
+                        }
+                        // Start preview after changing RGB settings
+                        start_preview();
+                    }
+                }
+                return false; // Don't process the RGB command normally
+        }
+    }
 
     switch (keycode) {
         case KC_LSFT:
@@ -185,6 +328,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 // Handle key repeat functionality
 void matrix_scan_user(void) {
+    // Handle preview timeout - only for MAC layers
+    if (is_previewing && is_mac_fn_layer) {
+        if (timer_elapsed(preview_timer) > PREVIEW_DURATION) {
+            is_previewing = false;
+            set_all_keys_red();  // Return to red after preview
+        }
+    }
+
     // Handle J key repeat
     if (macro_j_pressed) {
         if (timer_elapsed(macro_j_timer) > TAPPING_TERM) {
