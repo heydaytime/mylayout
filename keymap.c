@@ -32,8 +32,6 @@ enum layers {
 enum custom_keycodes {
     CTL_B = SAFE_RANGE,
     CTL_G,
-    MACRO_J,  // Custom J macro
-    MACRO_Z,   // Custom Z macro
     CST_LCRLY,  // Custom Left Curly Brace
     CST_RCRLY,  // Custom Right Curly Brace
 };
@@ -85,8 +83,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      _______,  KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   _______,  _______,  RGB_TOG,
      _______,  _______,  _______,  _______,   _______,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,          RGB_VAI,
      _______,  KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     _______,  _______,  _______,            RGB_VAD,
-     _______,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     MACRO_J,  KC_K,     KC_L,     KC_SCLN,  _______,            _______,            RGB_RMOD,
-     _______,            MACRO_Z,  KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     _______,  _______,  _______,            _______,  _______,  RGB_MOD,
+     _______,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,  KC_K,     KC_L,     KC_SCLN,  _______,            _______,            RGB_RMOD,
+     _______,            KC_Z,  KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     _______,  _______,  _______,            _______,  _______,  RGB_MOD,
      _______,  _______,  _______,                                _______,                                _______,  _______,  _______,  _______, _______,  _______),
 
 
@@ -113,12 +111,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // Track whether Left Shift is currently held
 static bool lshift_held = false;
-
-// Variables for macro key repeat functionality
-static bool macro_j_pressed = false;
-static bool macro_z_pressed = false;
-static uint16_t macro_j_timer = 0;
-static uint16_t macro_z_timer = 0;
 
 // Save current RGB settings
 void save_rgb_settings(void) {
@@ -290,34 +282,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 SEND_STRING(SS_LCTL("g"));  // Sends Ctrl+G
             }
             return false;
-
-        case MACRO_J:
-            if (record->event.pressed) {
-                // Key pressed
-                macro_j_pressed = true;
-                macro_j_timer = timer_read();
-                register_code(KC_J);  // Register J key
-            } else {
-                // Key released
-                macro_j_pressed = false;
-                unregister_code(KC_J);  // Unregister J key
-            }
-            return false;
-
-        case MACRO_Z:
-            if (record->event.pressed) {
-                // Key pressed
-                macro_z_pressed = true;
-                macro_z_timer = timer_read();
-                register_code(KC_Z);  // Register Z key
-            } else {
-                // Key released
-                macro_z_pressed = false;
-                unregister_code(KC_Z);  // Unregister Z key
-            }
-
-            return false;
-
     }
 
     if (!process_record_keychron_common(keycode, record)) {
@@ -326,29 +290,3 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-// Handle key repeat functionality
-void matrix_scan_user(void) {
-    // Handle preview timeout - only for MAC layers
-    if (is_previewing && is_mac_fn_layer) {
-        if (timer_elapsed(preview_timer) > PREVIEW_DURATION) {
-            is_previewing = false;
-            set_all_keys_red();  // Return to red after preview
-        }
-    }
-
-    // Handle J key repeat
-    if (macro_j_pressed) {
-        if (timer_elapsed(macro_j_timer) > TAPPING_TERM) {
-            // Key has been held long enough, enable repeat
-            // The register_code above will handle the repeat automatically
-        }
-    }
-
-    // Handle Z key repeat
-    if (macro_z_pressed) {
-        if (timer_elapsed(macro_z_timer) > TAPPING_TERM) {
-            // Key has been held long enough, enable repeat
-            // The register_code above will handle the repeat automatically
-        }
-    }
-}
