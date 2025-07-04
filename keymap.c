@@ -63,11 +63,6 @@ static uint8_t saved_rgb_val = 0;
 static bool saved_rgb_state = false;
 static bool rgb_settings_saved = false;
 
-// Preview functionality variables
-static bool is_previewing = false;
-static uint16_t preview_timer = 0;
-static const uint16_t PREVIEW_DURATION = 1000; // 1 second in milliseconds
-
 // clang-format off
 // https://docs.qmk.fm/keycodes
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -112,6 +107,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // Track whether Left Shift is currently held
 static bool lshift_held = false;
 
+
 // Save current RGB settings
 void save_rgb_settings(void) {
     if (!rgb_settings_saved) {
@@ -143,28 +139,6 @@ void set_all_keys_red(void) {
     rgb_matrix_enable();
     rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
     rgb_matrix_sethsv(0, 255, 255);  // Bright red (H=0, S=255, V=255)
-}
-
-// Apply current saved RGB settings (for preview)
-void apply_saved_rgb_settings(void) {
-    if (rgb_settings_saved) {
-        if (saved_rgb_state) {
-            rgb_matrix_enable();
-            rgb_matrix_mode(saved_rgb_mode);
-            rgb_matrix_sethsv(saved_rgb_hue, saved_rgb_sat, saved_rgb_val);
-        } else {
-            rgb_matrix_disable();
-        }
-    }
-}
-
-// Start preview mode
-void start_preview(void) {
-    if (is_mac_fn_layer) {
-        is_previewing = true;
-        preview_timer = timer_read();
-        apply_saved_rgb_settings();
-    }
 }
 
 // Layer state callback
@@ -236,8 +210,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                                 saved_rgb_sat = (saved_rgb_sat - 8 < 0) ? 0 : saved_rgb_sat - 8;
                                 break;
                         }
-                        // Start preview after changing RGB settings
-                        start_preview();
                     }
                 }
                 return false; // Don't process the RGB command normally
@@ -289,4 +261,3 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
     return true;
 }
-
