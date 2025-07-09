@@ -34,6 +34,13 @@ enum custom_keycodes {
     CTL_G,
     CST_LCRLY,  // Custom Left Curly Brace
     CST_RCRLY,  // Custom Right Curly Brace
+    VIM_ESC,    // Custom Vim Escape key
+    VIM_A,      // Vim insert mode keys
+    VIM_I,
+    VIM_O,
+    VIM_C,
+    VIM_S,
+    VIM_R,
 };
 
 // https://getreuer.info/posts/keyboards/custom-shift-keys/index.html#add-custom-shift-keys-to-your-keymap
@@ -56,6 +63,7 @@ uint8_t NUM_CUSTOM_SHIFT_KEYS = sizeof(custom_shift_keys) / sizeof(custom_shift_
 
 // Variables to track layer state and RGB settings
 static bool is_mac_fn_layer = false;
+static bool vim_mode_active = false;  // Track if we're in vim normal mode vs regular fn layer
 static uint8_t saved_rgb_mode = 0;
 static uint8_t saved_rgb_hue = 0;
 static uint8_t saved_rgb_sat = 0;
@@ -72,14 +80,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      KC_TAB,   KC_Q,     KC_W,     KC_F,     KC_P,     KC_B,     KC_J,     KC_L,     KC_U,     KC_Y,     KC_COLON,  KC_AT, KC_HASH,  KC_BSLS,            KC_PGDN,
      KC_BACKSPACE,  KC_A,     KC_R,     KC_S,     KC_T,     KC_G,     KC_M,     KC_N,     KC_E,     KC_I,     KC_O,     KC_QUOT,            KC_ENT,      KC_HOME,
      KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_D,     KC_V,     KC_K,     KC_H,     KC_COMM,  KC_DOT,   KC_SLSH,           CTL_G,  KC_UP,    KC_END,
-     KC_LCTL,  TG(MAC_FN), KC_LCMMD,                               KC_SPC,                                 KC_ESC,MO(MAC_FN),KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
+     KC_LCTL,  TG(MAC_FN), KC_LCMMD,                               KC_SPC,                                 VIM_ESC,TG(MAC_FN),KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
 
 [MAC_FN] = LAYOUT_ansi_84(
      _______,  KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   _______,  _______,  RGB_TOG,
      _______,  _______,  _______,  _______,   _______,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,          RGB_VAI,
-     _______,  KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     _______,  _______,  _______,            RGB_VAD,
-     _______,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,  KC_K,     KC_L,     KC_COLON,  _______,            _______,            RGB_RMOD,
-     _______,            KC_Z,  KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     _______,  _______,  _______,            _______,  _______,  RGB_MOD,
+     _______,  KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     VIM_I,     VIM_O,     KC_P,     _______,  _______,  _______,            RGB_VAD,
+     _______,  VIM_A,     VIM_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,  KC_K,     KC_L,     KC_COLON,  _______,            _______,            RGB_RMOD,
+     _______,            KC_Z,  KC_X,     VIM_C,     KC_V,     KC_B,     KC_N,     KC_M,     _______,  _______,  _______,            _______,  _______,  RGB_MOD,
      _______,  _______,  _______,                                _______,                                _______,  _______,  _______,  _______, _______,  _______),
 
 
@@ -134,11 +142,18 @@ void restore_rgb_settings(void) {
     }
 }
 
-// Set all keys to bright red
+// Set all keys to bright red (function layer)
 void set_all_keys_red(void) {
     rgb_matrix_enable();
     rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
     rgb_matrix_sethsv(0, 255, 255);  // Bright red (H=0, S=255, V=255)
+}
+
+// Set all keys to white (vim normal mode)
+void set_all_keys_white(void) {
+    rgb_matrix_enable();
+    rgb_matrix_mode(RGB_MATRIX_SOLID_COLOR);
+    rgb_matrix_sethsv(0, 0, 255);  // White (H=0, S=0, V=255)
 }
 
 // Layer state callback
@@ -149,12 +164,17 @@ layer_state_t layer_state_set_user(layer_state_t state) {
         is_mac_fn_layer = new_is_mac_fn_layer;
 
         if (is_mac_fn_layer) {
-            // Entering MAC_FN layer - save current settings and set to red
+            // Entering MAC_FN layer - save current settings and set appropriate color
             save_rgb_settings();
-            set_all_keys_red();
+            if (vim_mode_active) {
+                set_all_keys_white();  // Vim normal mode = white
+            } else {
+                set_all_keys_red();    // Regular function layer = red
+            }
         } else {
-            // Exiting MAC_FN layer - restore previous settings
+            // Exiting MAC_FN layer - restore previous settings and reset vim mode
             restore_rgb_settings();
+            vim_mode_active = false;  // Reset vim mode when leaving layer
         }
     }
 
@@ -252,6 +272,117 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case CTL_G:
             if (record->event.pressed) {
                 SEND_STRING(SS_LCTL("g"));  // Sends Ctrl+G
+            }
+            return false;
+
+        // Vim-specific keycodes
+        case VIM_ESC:
+            if (record->event.pressed) {
+                tap_code(KC_ESC);  // Send ESC
+                vim_mode_active = true;  // Mark that we're entering vim normal mode
+                layer_on(MAC_FN);  // Switch to MAC_FN layer (QWERTY for normal mode)
+            }
+            return false;
+
+        case VIM_A:
+            if (record->event.pressed) {
+                if (vim_mode_active) {  // Only switch back to colemak if in vim mode
+                    if (get_mods() & MOD_MASK_SHIFT) {
+                        // Shift is held, send 'A' (insert at end of line)
+                        tap_code16(S(KC_A));
+                    } else {
+                        // No shift, send 'a' (insert after cursor)
+                        tap_code(KC_A);
+                    }
+                    layer_off(MAC_FN);  // Switch back to MAC_BASE layer (Colemak DH for insert mode)
+                } else {
+                    // Regular function layer behavior - just send the key
+                    if (get_mods() & MOD_MASK_SHIFT) {
+                        tap_code16(S(KC_A));
+                    } else {
+                        tap_code(KC_A);
+                    }
+                }
+            }
+            return false;
+
+        case VIM_I:
+            if (record->event.pressed) {
+                if (vim_mode_active) {  // Only switch back to colemak if in vim mode
+                    if (get_mods() & MOD_MASK_SHIFT) {
+                        // Shift is held, send 'I' (insert at beginning of line)
+                        tap_code16(S(KC_I));
+                    } else {
+                        // No shift, send 'i' (insert before cursor)
+                        tap_code(KC_I);
+                    }
+                    layer_off(MAC_FN);  // Switch back to MAC_BASE layer (Colemak DH for insert mode)
+                } else {
+                    // Regular function layer behavior - just send the key
+                    if (get_mods() & MOD_MASK_SHIFT) {
+                        tap_code16(S(KC_I));
+                    } else {
+                        tap_code(KC_I);
+                    }
+                }
+            }
+            return false;
+
+        case VIM_O:
+            if (record->event.pressed) {
+                if (vim_mode_active) {  // Only switch back to colemak if in vim mode
+                    if (get_mods() & MOD_MASK_SHIFT) {
+                        // Shift is held, send 'O' (open line above)
+                        tap_code16(S(KC_O));
+                    } else {
+                        // No shift, send 'o' (open line below)
+                        tap_code(KC_O);
+                    }
+                    layer_off(MAC_FN);  // Switch back to MAC_BASE layer (Colemak DH for insert mode)
+                } else {
+                    // Regular function layer behavior - just send the key
+                    if (get_mods() & MOD_MASK_SHIFT) {
+                        tap_code16(S(KC_O));
+                    } else {
+                        tap_code(KC_O);
+                    }
+                }
+            }
+            return false;
+
+        case VIM_C:
+            if (record->event.pressed) {
+                if (vim_mode_active) {  // Only switch back to colemak if in vim mode
+                    tap_code(KC_C);  // Send 'c'
+                    layer_off(MAC_FN);  // Switch back to MAC_BASE layer (Colemak DH for insert mode)
+                } else {
+                    // Regular function layer behavior - just send the key
+                    tap_code(KC_C);
+                }
+            }
+            return false;
+
+        case VIM_S:
+            if (record->event.pressed) {
+                if (vim_mode_active) {  // Only switch back to colemak if in vim mode
+                    tap_code(KC_S);  // Send 's'
+                    layer_off(MAC_FN);  // Switch back to MAC_BASE layer (Colemak DH for insert mode)
+                } else {
+                    // Regular function layer behavior - just send the key
+                    tap_code(KC_S);
+                }
+            }
+            return false;
+
+        case VIM_R:
+            if (record->event.pressed) {
+                if (vim_mode_active) {  // Only switch back to colemak if in vim mode
+                    tap_code(KC_R);  // Send 'r'
+                    layer_off(MAC_FN);  // Switch back to MAC_BASE layer (Colemak DH for insert mode)
+                } else {
+                    // Regular function layer behavior - just send the key
+                    tap_code(KC_R);
+                }
             }
             return false;
     }
