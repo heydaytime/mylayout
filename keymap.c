@@ -23,8 +23,7 @@
 
 enum layers {
     MAC_BASE,
-    MAC_FN,
-    MAC_QWERTY,
+    MAC_FN,     // This is now QWERTY
     WIN_BASE,
     WIN_FN,
 };
@@ -35,7 +34,7 @@ enum custom_keycodes {
     CST_LCRLY,  // Custom Left Curly Brace
     CST_RCRLY,  // Custom Right Curly Brace
     QWERTY_TOG, // Toggle between Colemak and QWERTY
-    ESC_QWERTY, // Escape and switch to QWERTY
+    RCMD_QWERTY, // Right CMD to switch to QWERTY (for vim normal mode)
 };
 
 // https://getreuer.info/posts/keyboards/custom-shift-keys/index.html#add-custom-shift-keys-to-your-keymap
@@ -64,24 +63,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      KC_GRV,   KC_EXLM, KC_LBRC, CST_LCRLY, KC_LPRN, KC_PERC, KC_ASTR, KC_AMPR, KC_RPRN, CST_RCRLY, KC_RBRC,KC_MINS,KC_EQL,CTL_B,KC_PGUP,
      KC_TAB,   KC_Q,     KC_W,     KC_F,     KC_P,     KC_B,     KC_J,     KC_L,     KC_U,     KC_Y,     KC_COLON,  KC_AT, KC_HASH,  KC_BSLS,            KC_PGDN,
      KC_BACKSPACE,  KC_A,     KC_R,     KC_S,     KC_T,     KC_G,     KC_M,     KC_N,     KC_E,     KC_I,     KC_O,     KC_QUOT,            KC_ENT,      KC_HOME,
-     KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_D,     KC_V,     KC_K,     KC_H,     KC_COMM,  KC_DOT,   KC_SLSH,           QWERTY_TOG,  KC_UP,    KC_END,
-     KC_LCTL,  KC_LOPTN, KC_LCMMD,                               KC_SPC,                                 ESC_QWERTY, MO(MAC_FN), KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
+     KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_D,     KC_V,     KC_K,     KC_H,     KC_COMM,  KC_DOT,   KC_SLSH,           CTL_G,  KC_UP,    KC_END,
+     KC_LCTL,  QWERTY_TOG, KC_LCMMD,                               KC_SPC,                                 RCMD_QWERTY, MO(MAC_FN), KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
 
 [MAC_FN] = LAYOUT_ansi_84(
-     _______,  KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   _______,  _______,  RGB_TOG,
-     _______,  BT_HST1,  BT_HST2,  BT_HST3,  P2P4G,    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            RGB_VAI,
-     RGB_TOG,  RGB_MOD,  RGB_VAI,  RGB_HUI,  RGB_SAI,  RGB_SPI,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            RGB_VAD,
-     _______,  RGB_RMOD, RGB_VAD,  RGB_HUD,  RGB_SAD,  RGB_SPD,  _______,  _______,  _______,  _______,  _______,  _______,            _______,            RGB_RMOD,
-     _______,            _______,  _______,  _______,  _______,  BAT_LVL,  NK_TOGG,  _______,  _______,  _______,  _______,            _______,  _______,  RGB_MOD,
-     _______,  _______,  _______,                                _______,                                _______,  _______,  _______,  _______, _______,  _______),
-
-[MAC_QWERTY] = LAYOUT_ansi_84(
      KC_ESC,   KC_BRID,  KC_BRIU,  KC_MCTRL, KC_LNPAD, RGB_VAD,  RGB_VAI,  KC_MPRV,  KC_MPLY,  KC_MNXT,  KC_MUTE,  KC_VOLD,  KC_VOLU,  KC_SNAP,  KC_DEL,   RGB_TOG,
      KC_GRV,   KC_EXLM, KC_LBRC, CST_LCRLY, KC_LPRN, KC_PERC, KC_ASTR, KC_AMPR, KC_RPRN, CST_RCRLY, KC_RBRC,KC_MINS,KC_EQL,CTL_B,KC_PGUP,
      KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_AT, KC_HASH,  KC_BSLS,            KC_PGDN,
      KC_BACKSPACE,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_COLON,  KC_QUOT,            KC_ENT,      KC_HOME,
-     KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,           QWERTY_TOG,  KC_UP,    KC_END,
-     KC_LCTL,  KC_LOPTN, KC_LCMMD,                               KC_SPC,                                 ESC_QWERTY, MO(MAC_FN), KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
+     KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,           CTL_G,  KC_UP,    KC_END,
+     KC_LCTL,  QWERTY_TOG, KC_LCMMD,                               KC_SPC,                                 RCMD_QWERTY, MO(MAC_FN), KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
 
 [WIN_BASE] = LAYOUT_ansi_84(
      KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   KC_PSCR,  KC_DEL,   RGB_MOD,
@@ -105,18 +96,67 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // Track whether Left Shift is currently held
 static bool lshift_held = false;
 
+// Vim mode switching variables
+static bool entered_qwerty_via_rcmd = false;
+static bool any_key_pressed_with_aio = false;
+static uint16_t last_key_time = 0;
+
 // RGB matrix override for X key in QWERTY mode
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
-    if (IS_LAYER_ON(MAC_QWERTY)) {
-        // Set X key to white when in QWERTY mode
-        uint8_t x_key_led = 71; // Adjust this to match your keyboard's X key LED index
-        rgb_matrix_set_color(x_key_led, 255, 255, 255); // White
+    if (IS_LAYER_ON(MAC_FN)) {
+        // uint8_t rshift_key_led = 71;
+        // rgb_matrix_set_color(rshift_key_led, 255, 255, 255); // White
+
+        // for loop  that goes through the range of 32, 33, 34, 35, 36, 37 and changes the rgb matrix color to red
+         for (uint8_t i = 32; i <= 37; i++) {
+            rgb_matrix_set_color(i, 255, 255, 255); // White
+        }
     }
     return false;
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!process_custom_shift_keys(keycode, record)) { return false; }
+
+    // Handle vim mode switching logic
+    if (entered_qwerty_via_rcmd && IS_LAYER_ON(MAC_FN)) {
+        if (record->event.pressed) {
+            uint16_t current_time = timer_read();
+
+            // Check if this is a, i, or o key
+            if (keycode == KC_A || keycode == KC_I || keycode == KC_O) {
+                // If any other key was pressed within 100ms, don't switch
+                if (any_key_pressed_with_aio && (current_time - last_key_time) < 100) {
+                    any_key_pressed_with_aio = false;
+                    // Let the key press through normally
+                } else {
+                    // Let the key press be processed first, then switch layers
+                    // We'll handle the layer switch after the key is processed
+                    any_key_pressed_with_aio = false;
+                    // Don't switch layers here - let the key press through first
+                }
+            } else {
+                // Any other key pressed - set flag and update time
+                any_key_pressed_with_aio = true;
+                last_key_time = current_time;
+            }
+        } else {
+            // On key release, check if we should switch back to Colemak
+            if (keycode == KC_A || keycode == KC_I || keycode == KC_O) {
+                if (!any_key_pressed_with_aio) {
+                    // Switch back to MAC_BASE (Colemak) after key release
+                    layer_off(MAC_FN);
+                    entered_qwerty_via_rcmd = false;
+                }
+            }
+        }
+    }
+
+    // Reset states when switching to MAC_BASE
+    if (!IS_LAYER_ON(MAC_FN)) {
+        entered_qwerty_via_rcmd = false;
+        any_key_pressed_with_aio = false;
+    }
 
     switch (keycode) {
         case KC_LSFT:
@@ -159,18 +199,24 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case QWERTY_TOG:
             if (record->event.pressed) {
-                if (IS_LAYER_ON(MAC_QWERTY)) {
-                    layer_off(MAC_QWERTY);
+                if (IS_LAYER_ON(MAC_FN)) {
+                    entered_qwerty_via_rcmd = false;
+                    layer_off(MAC_FN);
                 } else {
-                    layer_on(MAC_QWERTY);
+                    layer_on(MAC_FN);
                 }
+                any_key_pressed_with_aio = false;
             }
             return false;
 
-        case ESC_QWERTY:
+        case RCMD_QWERTY:
             if (record->event.pressed) {
+                if (!IS_LAYER_ON(MAC_FN)) {
+                    layer_on(MAC_FN);
+                }
                 tap_code(KC_ESC);
-                layer_on(MAC_QWERTY);
+                entered_qwerty_via_rcmd = true;
+                any_key_pressed_with_aio = false;
             }
             return false;
     }
