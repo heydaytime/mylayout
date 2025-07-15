@@ -4,6 +4,9 @@ This repo contains my custom QMK keymap (`mylayout`) for the **Keychron K2 HE** 
 Built on Keychron’s `hall_effect_playground` branch of QMK firmware.
 
 ---
+# OVERVIEW
+**Status: CANCELLED**
+**Reason: VIM is too hard on COLEMAK**
 
 ## My Experimental Phase (Trying out Colemak Layout)
 I am currently experimenting with the **Colemak-DHm** layout.
