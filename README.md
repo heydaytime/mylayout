@@ -5,6 +5,16 @@ Built on Keychron’s `hall_effect_playground` branch of QMK firmware.
 
 ---
 
+## 📷 Layout Preview
+
+Mac Base Layout QWERTY
+![Current Layout](main-keyboard-layout.png)
+
+Win Base Layout COLEMAK
+![Current Layout](alt-keyboard-layout.png)
+
+
+
 ## 🛠️ Setup Instructions (macOS)
 
 ### 1. Install QMK CLI
