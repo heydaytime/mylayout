@@ -32,9 +32,14 @@ enum layers {
 enum custom_keycodes {
     CTL_B = SAFE_RANGE,
     CTL_G,
-    CST_LCRLY,  // Custom Left Curly Brace
-    CST_RCRLY,  // Custom Right Curly Brace
+    CST_LCRLY,   // Custom Left Curly Brace
+    CST_RCRLY,   // Custom Right Curly Brace
     CST_ALT_TAB, // Custom Alt+Tab for Mac
+    AUTO_CLICK,  // Auto-clicking left mouse button
+    MAC_PGUP,    // Macro: mQ
+    MAC_PGDN,    // Macro: 'Q
+    MAC_HOME,    // Macro: mW
+    MAC_END,     // Macro: 'W
 };
 
 // https://getreuer.info/posts/keyboards/custom-shift-keys/index.html#add-custom-shift-keys-to-your-keymap
@@ -60,10 +65,10 @@ uint8_t NUM_CUSTOM_SHIFT_KEYS = sizeof(custom_shift_keys) / sizeof(custom_shift_
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [MAC_BASE] = LAYOUT_ansi_84(
      KC_ESC,   KC_BRID,  KC_BRIU,  KC_MCTRL, KC_LNPAD, RGB_VAD,  RGB_VAI,  KC_MPRV,  KC_MPLY,  KC_MNXT,  KC_MUTE,  KC_VOLD,  KC_VOLU,  KC_SNAP,  KC_DEL,   RGB_TOG,
-     KC_GRV,   KC_EXLM, KC_LBRC, CST_LCRLY, KC_LPRN, KC_PERC, KC_ASTR, KC_AMPR, KC_RPRN, CST_RCRLY, KC_RBRC,KC_MINS,KC_EQL,CTL_B,KC_PGUP,
-     KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,  KC_AT, KC_HASH,  KC_BSLS,            KC_PGDN,
-     KC_BSPC,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_COLON,  KC_QUOT,            KC_ENT,      KC_HOME,
-     KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,           CTL_G,  KC_UP,    KC_END,
+     KC_GRV,   KC_EXLM, KC_LBRC, CST_LCRLY, KC_LPRN, KC_PERC, KC_ASTR, KC_AMPR, KC_RPRN, CST_RCRLY, KC_RBRC,KC_MINS,KC_EQL,CTL_B,MAC_PGUP,
+     KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,  KC_AT, KC_HASH,  KC_BSLS,            MAC_PGDN,
+     KC_BSPC,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_COLON,  KC_QUOT,            KC_ENT,      MAC_HOME,
+     KC_LSFT,            KC_Z,     KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,           CTL_G,  KC_UP,    MAC_END,
      KC_LCTL,  KC_LOPTN, KC_LCMMD,                               KC_SPC,                                 KC_ESC,MO(MAC_FN),KC_ROPTN,  KC_LEFT,  KC_DOWN,  KC_RGHT),
 
 [MAC_FN] = LAYOUT_ansi_84(
@@ -75,7 +80,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      _______,  _______,  _______,                                _______,                                _______,  _______,  _______,  _______,  _______,  _______),
 
 [WIN_BASE] = LAYOUT_ansi_84(
-     KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   KC_PSCR,  KC_DEL,   RGB_MOD,
+     KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   AUTO_CLICK,  KC_DEL,   RGB_MOD,
      KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  KC_EQL,   KC_BSPC,            KC_PGUP,
      KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,            KC_PGDN,
      KC_BSPC,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,            KC_ENT,             KC_HOME,
@@ -95,10 +100,50 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // Track whether Left Shift is currently held
 static bool lshift_held = false;
 
+// Auto-click variables
+static bool auto_click_active = false;
+static uint16_t auto_click_timer = 0;
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!process_custom_shift_keys(keycode, record)) { return false; }
 
     switch (keycode) {
+        case AUTO_CLICK:
+            if (record->event.pressed) {
+                // Key pressed - start auto-clicking
+                auto_click_active = true;
+                auto_click_timer = timer_read();
+                tap_code(KC_MS_BTN1); // Click immediately
+            } else {
+                // Key released - stop auto-clicking
+                auto_click_active = false;
+            }
+            return false;
+
+        case MAC_PGUP:
+            if (record->event.pressed) {
+                SEND_STRING("mQ");
+            }
+            return false;
+
+        case MAC_PGDN:
+            if (record->event.pressed) {
+                SEND_STRING("'Q");
+            }
+            return false;
+
+        case MAC_HOME:
+            if (record->event.pressed) {
+                SEND_STRING("mW");
+            }
+            return false;
+
+        case MAC_END:
+            if (record->event.pressed) {
+                SEND_STRING("'W");
+            }
+            return false;
+
         case CST_ALT_TAB:
             if (record->event.pressed) {
                 register_code(KC_LCMD);
@@ -154,4 +199,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
     return true;
+}
+
+void matrix_scan_user(void) {
+    if (auto_click_active) {
+        if (timer_elapsed(auto_click_timer) >= 250) {
+            tap_code(KC_MS_BTN1); // Send left click
+            auto_click_timer = timer_read(); // Reset timer
+        }
+    }
 }
